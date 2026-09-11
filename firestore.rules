@@ -1,0 +1,332 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // True once an admin has set users/{uid}.blocked — stops further
+    // submissions from that account while leaving their read access (and
+    // everything they already contributed) untouched. Missing the field
+    // entirely (the common case) defaults to not blocked.
+    function isBlocked() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('blocked', false) == true;
+    }
+
+    // Public songbook — everyone can read every non-draft song (a 'draft'
+    // is only readable by its own author or an admin — never entered
+    // review, so it's never public, unlike pending/rejected/approved which
+    // are all world-readable same as before). A signed-in, non-blocked user
+    // may create a new submission, but only as their own attributed song,
+    // and only starting life as 'pending' or 'draft' — they can never write
+    // status: 'approved'/'rejected' themselves. Editing or deleting an
+    // existing song (including the approve/reject moderation step, and an
+    // admin fixing up a submission before releasing it) is admin-only —
+    // with these author-owned exceptions:
+    //  - draft -> draft: saving/continuing your own unfinished draft.
+    //  - draft -> pending: submitting a draft for review the first time.
+    //  - rejected -> pending: fixing up and resending a rejected song,
+    //    restricted to the content fields a resubmission would plausibly
+    //    change (stricter than the draft cases since this one was already
+    //    reviewed once).
+    match /songs/{songId} {
+      // `resource == null` first: reading a song ID that doesn't exist (a
+      // stale link, a deleted song, ...) must resolve to a clean "not
+      // found" client-side (see song_reader_screen.dart) rather than
+      // PERMISSION_DENIED — without this guard, `resource.data` throws on a
+      // null `resource` for a nonexistent doc, and Firestore surfaces that
+      // evaluation error as a permission error instead of NOT_FOUND. Safe to
+      // allow: there's no data to leak from a document that isn't there.
+      allow read: if resource == null
+        || resource.data.status != 'draft'
+        || isAdmin()
+        || (isSignedIn() && resource.data.authorId == request.auth.uid);
+      allow create: if isSignedIn()
+        && !isBlocked()
+        && request.resource.data.authorId == request.auth.uid
+        && (request.resource.data.status == 'pending'
+          || request.resource.data.status == 'draft');
+      allow update: if isAdmin() || (
+        isSignedIn()
+        && !isBlocked()
+        && resource.data.authorId == request.auth.uid
+        && request.resource.data.authorId == request.auth.uid
+        && (
+          (resource.data.status == 'draft'
+            && (request.resource.data.status == 'draft'
+              || request.resource.data.status == 'pending'))
+          || (resource.data.status == 'rejected'
+            && request.resource.data.status == 'pending'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'songName', 'songNameLower', 'artist', 'band', 'songwriter',
+              'artistIds', 'artistNames', 'category', 'gender', 'key',
+              'keyIsMinor', 'lyrics', 'youtubeLink', 'status', 'rejectionReason'
+            ]))
+        )
+      );
+      allow delete: if isAdmin() || (
+        isSignedIn()
+        && resource.data.authorId == request.auth.uid
+        && resource.data.status == 'draft'
+      );
+    }
+
+    // Public artist list. Any signed-in, non-blocked user can add a new
+    // artist while submitting a song (or reuse an existing one from the
+    // typeahead) — renaming/removing an artist afterwards, and setting the
+    // profile-page fields (`bio`, `photoUrl` — see
+    // admin_artists_screen.dart / artist_profile_screen.dart) already
+    // fell under this same admin-only update rule, no change needed here.
+    match /artists/{artistId} {
+      allow read: if true;
+      allow create: if isSignedIn() && !isBlocked();
+      allow update, delete: if isAdmin();
+    }
+
+    // Aggregate counters (currently just the site-wide visit count shown on
+    // Home) — always written by the Admin SDK via a Cloud Function
+    // (recordSiteView), never directly by a client, so this only needs to
+    // grant public read.
+    match /stats/{statId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // User profiles. Publicly readable — needed to show author names and
+    // badge tiers next to songs — but never holds anything sensitive; no
+    // email is stored here (Firebase Auth already owns that).
+    match /users/{userId} {
+      allow read: if true;
+
+      // A user may create their own doc at signup, but only with safe
+      // starting values — never self-granting admin or a starting count.
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.isAdmin == false
+        && request.resource.data.approvedSongCount == 0;
+
+      // A signed-in user may only ever edit their own displayName/photoUrl/
+      // streak fields. currentStreak/longestStreak/lastActiveDate are a
+      // client-computed daily-login streak (profile_screen.dart) — trusted
+      // at the same level as displayName/photoUrl already are (a user could
+      // in principle write a fake streak number, but this is a cosmetic
+      // gamification counter, not something worth server-side validation
+      // for). Admins may edit anything (e.g. approving a song increments
+      // the author's approvedSongCount, or granting isAdmin to a moderator).
+      allow update: if isAdmin() || (
+        isSignedIn() && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['displayName', 'photoUrl', 'currentStreak', 'longestStreak', 'lastActiveDate'])
+      );
+
+      allow delete: if false;
+
+      // A user's own saved songs — membership is just whether a doc exists
+      // here (see favorite_button.dart), so favoriting/unfavoriting is a
+      // single set()/delete() with no fields on the song itself to touch.
+      // Private to the owner, unlike the parent users/{userId} doc.
+      match /favorites/{songId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      // A user's own setlists — name + an ordered array of song ids. Same
+      // fully-owned shape as favorites (the owner can rename, reorder, add/
+      // remove songs, or delete the whole list freely); private by default,
+      // unlike the parent users/{userId} doc — except a setlist the owner
+      // has explicitly flagged `public: true` (via the Share button,
+      // setlist_detail_screen.dart) is also world-readable, so an
+      // anonymous viewer following a shared link (see PublicSetlistScreen)
+      // can load it without an account. Write stays owner-only regardless.
+      match /setlists/{setlistId} {
+        allow read: if (isSignedIn() && request.auth.uid == userId)
+          || resource.data.get('public', false) == true;
+        allow write: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      // In-app notifications (song approved/rejected, a reply on a thread
+      // you started) — private to the owner. Only ever created by a Cloud
+      // Function via the Admin SDK (which bypasses these rules entirely), so
+      // client-side create is deliberately blocked to stop a user from
+      // faking notifications to themselves or spamming another account's
+      // subcollection. Update is narrowed to flipping `read`, the only
+      // mutation the client ever needs (see notification_bell.dart).
+      match /notifications/{notificationId} {
+        allow read, delete: if isSignedIn() && request.auth.uid == userId;
+        allow update: if isSignedIn() && request.auth.uid == userId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+        allow create: if false;
+      }
+    }
+
+    // "Add the chords for me" requests — deliberately open to anyone, not
+    // just signed-in users: the target audience is someone who doesn't
+    // know how to work out guitar chords and doesn't want to register an
+    // account just to ask once (see request_song_screen.dart). Publicly
+    // readable/voteable (song_requests_vote_screen.dart) so people can
+    // upvote what they'd like to see chorded next — but the requester's
+    // `contact` info stays admin-only, split into the private/info
+    // subcollection below rather than a field here, since rules can't
+    // redact individual fields from an otherwise-public document read.
+    // voteCount starts at 0 and is only ever changed by the
+    // onSongRequestVoteAdded/Removed Cloud Functions (Admin SDK, bypasses
+    // rules) — never writable directly by a client.
+    match /songRequests/{requestId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(
+          ['songLink', 'lyrics', 'createdAt', 'voteCount'])
+        && request.resource.data.songLink is string
+        && request.resource.data.songLink.size() > 0
+        && request.resource.data.songLink.size() < 2000
+        && request.resource.data.lyrics is string
+        && request.resource.data.lyrics.size() > 0
+        && request.resource.data.lyrics.size() < 20000
+        && request.resource.data.voteCount == 0
+        && request.resource.data.createdAt == request.time;
+      // Admin-only, and only to record which song fulfilled this request
+      // (see request_song_notification's onSongRequestFulfilled trigger,
+      // functions/index.js) — everything else about a request is still
+      // immutable once created, same as before.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'fulfilledSongId', 'fulfilledSongName']);
+      allow delete: if isAdmin();
+
+      // The requester's contact info — written alongside the public doc
+      // above in the same client batch (same parent id), but only ever
+      // readable by an admin handling the request. requesterUid is
+      // optional (the request form itself stays usable without an
+      // account) — when present it must be the submitter's own uid, never
+      // someone else's, so a signed-in submitter can eventually be
+      // notified if their request gets fulfilled (an anonymous submission
+      // simply has no uid to notify).
+      match /private/{doc} {
+        allow read: if isAdmin();
+        allow create: if request.resource.data.keys().hasOnly(
+            ['contact', 'createdAt', 'requesterUid'])
+          && request.resource.data.contact is string
+          && request.resource.data.contact.size() > 0
+          && request.resource.data.contact.size() < 500
+          && request.resource.data.createdAt == request.time
+          && (!('requesterUid' in request.resource.data)
+            || request.resource.data.requesterUid == request.auth.uid);
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+
+      // A vote is just the existence of this doc, keyed by the voting
+      // user's own uid — same shape as comments/{id}/likes/{uid}. Voting
+      // requires an account (unlike submitting the request itself) so one
+      // person can't inflate a request's rank with anonymous repeat votes.
+      match /votes/{uid} {
+        allow read, create, delete: if isSignedIn() && request.auth.uid == uid;
+        allow update: if false;
+      }
+    }
+
+    // "This song's chords/lyrics look wrong" reports from song_reader_
+    // screen.dart's report-issue button — deliberately open to anyone, not
+    // just signed-in users, same reasoning as songRequests: a reader who
+    // spots a mistake shouldn't need an account just to flag it. Never
+    // publicly readable — only the admin queue
+    // (admin_song_issue_reports_screen.dart) lists them. `resolved` is the
+    // only field an admin ever changes (marking it handled); there's no
+    // client update path at all otherwise, matching the "create once, admin
+    // manages the rest" shape used everywhere else in this file.
+    match /songIssueReports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if request.resource.data.keys().hasOnly(
+          ['songId', 'songName', 'issueType', 'description', 'resolved', 'createdAt'])
+        && request.resource.data.songId is string
+        && request.resource.data.songId.size() > 0
+        && request.resource.data.songName is string
+        && request.resource.data.issueType is string
+        && request.resource.data.description is string
+        && request.resource.data.description.size() < 2000
+        && request.resource.data.resolved == false
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['resolved']);
+      allow delete: if isAdmin();
+    }
+
+    // Community discussion board — threads with a flat comment list under
+    // each one (see community_screen.dart / community_thread_screen.dart).
+    // Anyone can read (no account needed to browse), but posting either a
+    // thread or a comment requires being signed in and not blocked — same
+    // gate as submitting a song. No update path for either: a post is
+    // either there as originally written, or deleted (by its own author or
+    // an admin) — no edit-in-place, keeping this collection's rules as
+    // simple as songRequests' rather than threading through partial-edit
+    // cases the way songs' status transitions need to.
+    match /communityThreads/{threadId} {
+      allow read: if true;
+      allow create: if isSignedIn() && !isBlocked()
+        && request.resource.data.keys().hasOnly(
+            ['title', 'body', 'authorId', 'authorName', 'createdAt'])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() < 200
+        && request.resource.data.body is string
+        && request.resource.data.body.size() > 0
+        && request.resource.data.body.size() < 5000
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if isAdmin() || (
+        isSignedIn() && resource.data.authorId == request.auth.uid
+      );
+
+      match /comments/{commentId} {
+        allow read: if true;
+        // replyTo* fields are optional (a plain top-level comment has none
+        // of them) — hasOnly() only bounds the *maximum* key set, so a
+        // create without them still passes.
+        allow create: if isSignedIn() && !isBlocked()
+          && request.resource.data.keys().hasOnly(
+              ['body', 'authorId', 'authorName', 'createdAt',
+               'replyToCommentId', 'replyToAuthorName', 'replyToSnippet'])
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.body is string
+          && request.resource.data.body.size() > 0
+          && request.resource.data.body.size() < 3000
+          && request.resource.data.createdAt == request.time;
+        // Only the comment's own author, and only to fix a typo: the diff
+        // must be exactly {body, editedAt}, never touching authorId/
+        // createdAt/replyTo*/likeCount. likeCount itself stays fully
+        // protected from any client write either way (both create's
+        // allowlist above and this diff bound exclude it) — only
+        // onCommentLikeAdded/onCommentLikeRemoved (functions/index.js, via
+        // the Admin SDK, which bypasses rules entirely) ever touch it, same
+        // denormalized-counter pattern as songs/{songId}.favoriteCount.
+        allow update: if isSignedIn()
+          && resource.data.authorId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['body', 'editedAt'])
+          && request.resource.data.body is string
+          && request.resource.data.body.size() > 0
+          && request.resource.data.body.size() < 3000
+          && request.resource.data.editedAt == request.time;
+        allow delete: if isAdmin() || (
+          isSignedIn() && resource.data.authorId == request.auth.uid
+        );
+
+        // A like is just the existence of this doc, keyed by the liking
+        // user's own uid — same shape as users/{uid}/favorites/{songId},
+        // just inverted (owned by the comment, not the user) since more
+        // than one person's "have I liked this" needs checking from the
+        // same comment. Private to its own owner, matching favorites.
+        match /likes/{uid} {
+          allow read, create, delete: if isSignedIn() && request.auth.uid == uid;
+          allow update: if false;
+        }
+      }
+    }
+  }
+}

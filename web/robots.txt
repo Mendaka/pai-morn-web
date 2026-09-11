@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://song-and-chord.web.app/sitemap.xml

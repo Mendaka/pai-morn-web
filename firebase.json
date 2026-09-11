@@ -1,0 +1,58 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "functions": {
+    "source": "functions"
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": ["firebase.json", "**/.*"],
+    "rewrites": [
+      {
+        "source": "/songbook/song-card/**",
+        "function": "songCard"
+      },
+      {
+        "source": "/site-card.png",
+        "function": "siteCard"
+      },
+      {
+        "source": "/daily-update-card.png",
+        "function": "dailyUpdateCard"
+      },
+      {
+        "source": "/daily-update",
+        "function": "dailyUpdatePreview"
+      },
+      {
+        "source": "/songbook/song/*/print",
+        "function": "songPrintPage"
+      },
+      {
+        "source": "/songbook/song/**",
+        "function": "songPreview"
+      },
+      {
+        "source": "/sitemap.xml",
+        "function": "sitemap"
+      },
+      {
+        "source": "/api/record-song-view",
+        "function": "recordSongView"
+      },
+      {
+        "source": "/api/record-site-view",
+        "function": "recordSiteView"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

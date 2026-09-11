@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // One profile photo per user, at a fixed path (re-uploading overwrites
+    // it rather than accumulating old ones) — see profile_screen.dart.
+    // Publicly readable, matching how users/{uid} is already public-read in
+    // Firestore (needed to show names/badges next to songs); only the
+    // owning user can write their own, capped at 5MB and image-only —
+    // matches this app's other self-edit rules (e.g. displayName in
+    // firestore.rules) in spirit: a user can only ever touch their own.
+    match /profile_photos/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // One photo per artist — unlike profile_photos, there's no single
+    // owning uid to check against (an artist doc isn't "owned" by whoever
+    // first created it via the submit-song typeahead), so this mirrors
+    // firestore.rules' own artists/{artistId} update rule instead:
+    // admin-only, checked here via a cross-service Firestore read since
+    // Storage rules have no isAdmin() of their own to call.
+    match /artist_photos/{artistId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+  }
+}
