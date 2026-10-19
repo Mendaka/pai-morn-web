@@ -47,6 +47,14 @@ firestore-debug.log
 *-debug.log
 .firebase/
 
+# ad-hoc terminal output saved while working (deploy/functions runs) — not source
+deploy-log*.txt
+deploy-function-log.txt
+deploy-rules-log*.txt
+deploy-storage-log.txt
+functions-log*.txt
+functions-list.txt
+
 # service account keys / credentials — never commit these; values live in .env.local instead
 assets/google-analyticsdata/
 *serviceaccount*.json
