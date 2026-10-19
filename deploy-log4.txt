@@ -1,0 +1,168 @@
+﻿node.exe : No Firebase app associated with site song-and-chord, injecting project default config.
+At C:\Users\Asus\AppData\Roaming\npm\firebase.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/firebase-tools/lib/bin/fireb ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (No Firebase app...default config.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  You can link a Web app to a Hosting site here 
+https://console.firebase.google.com/project/song-and-chord/settings/general/web
+
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+   The integration is known to work with Next.js version 12 - 15.0. You may encounter errors.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+▲ Next.js 16.3.5 (Turbopack)
+
+- Environments: .env.local
+
+✓ Running next.config.ts took 108ms
+
+
+
+  Creating an optimized production build ...
+
+✓ Compiled successfully in 3.8s
+
+  Running TypeScript ...
+
+  Finished TypeScript in 1202ms ...
+
+  Collecting page data using 27 workers ...
+
+  Generating static pages using 27 workers (0/31) ...
+
+  Generating static pages using 27 workers (7/31) 
+
+  Generating static pages using 27 workers (15/31) 
+
+  Generating static pages using 27 workers (23/31) 
+
+✓ Generating static pages using 27 workers (31/31) in 405ms
+
+  Finalizing page optimization ...
+
+
+
+Route (app)
+┌ ƒ /
+├ ○ /about
+├ ○ /admin
+├ ○ /admin/artists
+├ ○ /admin/issues
+├ ○ /admin/playlists
+├ ƒ /admin/playlists/[id]
+├ ○ /admin/requests
+├ ○ /admin/review
+├ ○ /admin/supporters
+├ ○ /apple-icon.png
+├ ƒ /artists-index.json
+├ ƒ /book
+├ ƒ /book/songs
+├ ○ /chords
+├ ○ /community
+├ ƒ /community/thread/[id]
+├ ○ /contact
+├ ○ /delete-account
+├ ○ /favorites
+├ ƒ /googleeb6c755f4fea4477.html
+├ ○ /guide
+├ ○ /icon.png
+├ ○ /login
+├ ○ /manifest.webmanifest
+├ ○ /my-songs
+├ ○ /_not-found
+├ ○ /privacy
+├ ○ /profile
+├ ○ /request-song
+├ ○ /robots.txt
+├ ○ /setlists
+├ ƒ /setlists/[id]
+├ ƒ /setlists/shared/[uid]/[id]
+├ ƒ /sitemap.xml
+├ ƒ /songbook
+├ ƒ /songbook/artist/[id]
+├ ƒ /songbook/composer/[name]
+├ ƒ /songbook/playlist/[id]
+├ ƒ /songbook/song/[id]
+├ ○ /song-requests/vote
+├ ƒ /songs-index.json
+├ ƒ /submit-song
+├ ○ /support
+├ ○ /terms
+├ ○ /tuner
+└ ○ /.well-known/assetlinks.json
+
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+Building a Cloud Function to run this application. This is needed due to:
+ • non-static component /admin/playlists/[id]/page
+ • non-static component /artists-index.json/route
+ • non-static component /book/page
+ • non-static component /book/songs/route
+ • non-static component /community/thread/[id]/page
+ • and 12 other reasons, use --debug to see more
+
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'firebase-frameworks@0.11.8',
+npm warn EBADENGINE   required: { node: '^16.0.0 || ^18.0.0 || ^20.0.0 || ^22.0.0' },
+npm warn EBADENGINE   current: { node: 'v24.13.0', npm: '11.8.0' }
+npm warn EBADENGINE }
+
+up to date in 5s
+
+47 packages are looking for funding
+  run `npm fund` for details
+i  hosting: The following function(s) are pinned to site song-and-chord and will be deployed as well: ssrsongandchord
+
+=== Deploying to 'song-and-chord'...
+
+i  deploying functions, hosting
+i  functions: preparing codebase firebase-frameworks-song-and-chord for deployment
+i  functions: ensuring required API cloudfunctions.googleapis.com is enabled...
+i  functions: ensuring required API cloudbuild.googleapis.com is enabled...
+i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled...
+!  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+!  functions: Please note that there will be breaking changes when you upgrade.
+i  functions: Loading and analyzing source code for codebase firebase-frameworks-song-and-chord to determine what to deploy
+Serving at port 8429
+
+i  extensions: ensuring required API firebaseextensions.googleapis.com is enabled...
+i  functions: Loaded environment variables from .env.
+i  functions: preparing .firebase\song-and-chord\functions directory for uploading...
+i  functions: packaged D:\flutter_web\pai_morn_web_next\.firebase\song-and-chord\functions (405.17 MB) for uploading
+i  functions: ensuring required API run.googleapis.com is enabled...
+i  functions: ensuring required API eventarc.googleapis.com is enabled...
+i  functions: ensuring required API pubsub.googleapis.com is enabled...
+i  functions: ensuring required API storage.googleapis.com is enabled...
+i  functions: generating the service identity for pubsub.googleapis.com...
+i  functions: generating the service identity for eventarc.googleapis.com...
++  functions: .firebase\song-and-chord\functions source uploaded successfully
+i  hosting[song-and-chord]: beginning deploy...
+i  hosting[song-and-chord]: found 131 files in .firebase\song-and-chord\hosting
+i  hosting: adding files to version [0/131] (0%)
+i  hosting: uploading new files [24/27] (88%)
+i  hosting: upload complete
++  hosting[song-and-chord]: file upload complete
+i  functions: updating Node.js 24 (2nd Gen) function firebase-frameworks-song-and-chord:ssrsongandchord(us-central1)...
++  functions[firebase-frameworks-song-and-chord:ssrsongandchord(us-central1)] Successful update operation.
+Function URL (firebase-frameworks-song-and-chord:ssrsongandchord(us-central1)): https://ssrsongandchord-vqam5x356a-uc.a.run.app
+i  hosting[song-and-chord]: finalizing version...
++  hosting[song-and-chord]: version finalized
+i  hosting[song-and-chord]: releasing new version...
++  hosting[song-and-chord]: release complete
+
++  Deploy complete!
+
+Project Console: https://console.firebase.google.com/project/song-and-chord/overview
+Hosting URL: https://song-and-chord.web.app

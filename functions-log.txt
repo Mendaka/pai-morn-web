@@ -1,0 +1,56 @@
+﻿2026-10-14T15:12:40.042544Z I ssrsongandchord: 
+2026-10-14T15:12:40.081051Z I ssrsongandchord: 
+2026-10-14T16:18:01.782407Z I ssrsongandchord: 
+2026-10-14T16:18:01.841457Z I ssrsongandchord: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-10-14T16:18:03.119789Z I ssrsongandchord: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-10-14T16:18:03.741181Z ? ssrsongandchord: ✓ Running next.config took 41ms
+
+2026-10-14T16:18:09.023673Z I ssrsongandchord: 
+2026-10-14T16:18:09.040177Z I ssrsongandchord: 
+2026-10-14T16:18:09.078654Z I ssrsongandchord: 
+2026-10-14T16:18:09.393273Z I ssrsongandchord: 
+2026-10-14T16:18:09.557815Z I ssrsongandchord: 
+2026-10-14T16:18:15.858635Z I ssrsongandchord: 
+2026-10-14T16:18:15.861914Z I ssrsongandchord: 
+2026-10-14T16:18:15.912195Z ? ssrsongandchord: (node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 uncaughtException listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+2026-10-14T16:18:16.016925Z I ssrsongandchord: 
+2026-10-14T16:18:16.020114Z I ssrsongandchord: 
+2026-10-14T16:18:16.421199Z I ssrsongandchord: 
+2026-10-14T16:18:16.421549Z I ssrsongandchord: 
+2026-10-14T16:18:16.442239Z I ssrsongandchord: 
+2026-10-14T16:18:16.447946Z I ssrsongandchord: 
+2026-10-14T16:18:26.185432Z I ssrsongandchord: 
+2026-10-14T16:18:26.191881Z I ssrsongandchord: 
+2026-10-14T16:18:26.193141Z I ssrsongandchord: 
+2026-10-14T16:18:26.694054Z I ssrsongandchord: 
+2026-10-14T16:18:26.703051Z I ssrsongandchord: 
+2026-10-14T16:18:26.706043Z I ssrsongandchord: 
+2026-10-14T16:18:55.256628Z I ssrsongandchord: 
+2026-10-14T16:29:01.394039Z I ssrsongandchord: 
+2026-10-14T16:29:49.061480Z I ssrsongandchord: 
+2026-10-14T16:29:51.955397Z E ssrsongandchord: 'Memory limit of 256 MiB exceeded with 269 MiB used. Consider increasing the memory limit, see https://cloud.google.com/functions/docs/configuring/memory'
+2026-10-14T16:32:04.445815Z I ssrsongandchord: 
+2026-10-14T16:32:04.458490Z I ssrsongandchord: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-10-14T16:32:05.466301Z I ssrsongandchord: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-10-14T16:32:05.985335Z ? ssrsongandchord: ✓ Running next.config took 29ms
+
+2026-10-14T16:41:11.916122Z I ssrsongandchord: 
+2026-10-14T16:41:13.996119Z E ssrsongandchord: 'Memory limit of 256 MiB exceeded with 260 MiB used. Consider increasing the memory limit, see https://cloud.google.com/functions/docs/configuring/memory'
+2026-10-14T16:41:14.158447Z I ssrsongandchord: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-10-14T16:41:14.520926Z W ssrsongandchord: 
+2026-10-14T16:41:15.083576Z I ssrsongandchord: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-10-14T16:43:03.552446Z I ssrsongandchord: 
+2026-10-14T16:43:03.880274Z ? ssrsongandchord: ✓ Running next.config took 31ms
+
+2026-10-14T16:43:29.494363Z I ssrsongandchord: 
+2026-10-14T16:43:30.116096Z I ssrsongandchord: 
+2026-10-14T16:56:06.248522382Z N ssrsongandchord: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"chordtai@gmail.com","principalSubject":"user:chordtai@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"2405:9800:b952:a7b6:10c3:638c:ac27:be4f","callerSuppliedUserAgent":"FirebaseCLI/15.5.1 agent-name/claude_code,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2026-10-14T16:56:04.990314465Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/song-and-chord/locations/us-central1/functions/ssrsongandchord","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/song-and-chord/locations/us-central1/functions/ssrsongandchord","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/song-and-chord/locations/us-central1/functions/ssrsongandchord","request":{"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","labels"]},"function":{"name":"projects/song-and-chord/locations/us-central1/functions/ssrsongandchord","service_config":{"max_instance_request_concurrency":80,"available_cpu":"1","available_memory":"256Mi"},"labels":{"firebase-functions-hash":"7d546d7bbe1808f4a26400ddd64ed352a1d45d0e","firebase-functions-codebase":"firebase-frameworks-song-and-chord","deployment-tool":"cli-firebase"},"build_config":{"runtime":"nodejs24","source":{},"entry_point":"ssrsongandchord"}}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["us-central1"]}}
+2026-10-14T16:58:49.554797Z I ssrsongandchord: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2026-10-14T16:58:52.130689Z I ssrsongandchord: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-10-14T16:58:56.366527855Z N ssrsongandchord: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"chordtai@gmail.com","principalSubject":"user:chordtai@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/song-and-chord/locations/us-central1/functions/ssrsongandchord","response":{"@type":"type.googleapis.com/google.cloud.functions.v2.Function","state":"ACTIVE","url":"https://us-central1-song-and-chord.cloudfunctions.net/ssrsongandchord","updateTime":"2026-10-14T16:56:06.228228064Z","buildConfig":{"serviceAccount":"projects/song-and-chord/serviceAccounts/232124936247-compute@developer.gserviceaccount.com","entryPoint":"ssrsongandchord","runtime":"nodejs24","source":{},"dockerRegistry":"ARTIFACT_REGISTRY","dockerRepository":"projects/song-and-chord/locations/us-central1/repositories/gcf-artifacts","automaticUpdatePolicy":{}},"createTime":"2026-09-21T05:58:18.411994573Z","environment":"GEN_2","labels":{"firebase-functions-hash":"7d546d7bbe1808f4a26400ddd64ed352a1d45d0e","deployment-tool":"cli-firebase","firebase-functions-codebase":"firebase-frameworks-song-and-chord"},"satisfiesPzi":true,"serviceConfig":{"timeoutSeconds":60,"allTrafficOnLatestRevision":true,"revision":"ssrsongandchord-00120-neb","maxInstanceCount":3,"ingressSettings":"ALLOW_ALL","availableMemory":"256Mi","maxInstanceRequestConcurrency":80,"availableCpu":"1","uri":"https://ssrsongandchord-vqam5x356a-uc.a.run.app","serviceAccountEmail":"232124936247-compute@developer.gserviceaccount.com"},"name":"projects/song-and-chord/locations/us-central1/functions/ssrsongandchord"},"resourceLocation":{"currentLocations":["us-central1"]}}
+2026-10-14T16:59:18.522319Z I ssrsongandchord: 
+2026-10-14T16:59:18.959613Z ? ssrsongandchord: ✓ Running next.config took 46ms
+
+2026-10-14T17:04:46.839333Z I ssrsongandchord: 

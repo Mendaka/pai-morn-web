@@ -1,0 +1,617 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-jakarta), var(--font-myanmar), system-ui, sans-serif;
+  --font-logo: var(--font-lobster), cursive;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Shan and Burmese script is drawn with Noto Sans Myanmar (Google Fonts, self-hosted
+   by next/font in app/layout.tsx): the body stack is Roboto, then Noto Sans Myanmar,
+   and Roboto has no Myanmar glyphs, so every Shan/Burmese character falls through to
+   it (checked with CDP getPlatformFontsForNode). Do NOT put a Myanmar font FIRST:
+   it would also draw the Latin letters — chords like C, G, F — with its own taller
+   vertical metrics, which pushed them into the row's clip edge and cut them in half.
+
+   Shan interface only: the owner's AJ Kunheing E-T-M 05 goes between Roboto and Noto
+   Sans Myanmar (Myanmar-block glyphs only, via unicode-range in layout.tsx; anything it
+   lacks still falls through to Noto), and the wordmark uses AJ Kunheing 19. Burmese
+   interface: the owner's Padauk, same restriction. Thai has the analogous problem one
+   level up — Roboto has NO Thai glyphs at all, so every visitor was silently seeing
+   whatever Thai font their own OS ships (Tahoma, Leelawadee UI, Thonburi, ...), which is
+   why it read as inconsistent/"ไม่สวย" — IBM Plex Sans Thai (Google Fonts) fixes that the
+   same way. Thai vowels/tone marks stack above and below the consonant too, so it gets
+   the same spacing/line-height/weight treatment as Shan and Burmese below.
+
+   The type settings across the site are tuned for Latin and
+   make these scripts look cramped: extra-bold weights fill in the counters, negative
+   letter-spacing (tracking-tight) collides the stacked vowel and tone marks, and
+   line-height near 1.0 squeezes marks that sit above and below the line. So for these
+   three languages only: normal spacing, a taller line, and no heavier than bold. */
+:lang(shn) [class*="tracking-"],
+:lang(my) [class*="tracking-"],
+:lang(th) [class*="tracking-"] {
+  letter-spacing: normal;
+}
+:lang(shn) :is(h1, h2, h3, h4, .leading-tight, .leading-snug, [class*="leading-["]),
+:lang(my) :is(h1, h2, h3, h4, .leading-tight, .leading-snug, [class*="leading-["]),
+:lang(th) :is(h1, h2, h3, h4, .leading-tight, .leading-snug, [class*="leading-["]) {
+  line-height: 1.55;
+}
+:lang(shn) :is(.font-extrabold, .font-black),
+:lang(my) :is(.font-extrabold, .font-black),
+:lang(th) :is(.font-extrabold, .font-black) {
+  font-weight: 700;
+}
+
+/* Shared text input used by the account forms (icon sits at the left). */
+:lang(shn) body {
+  font-family: var(--font-jakarta), var(--font-shan-text), var(--font-myanmar), system-ui, sans-serif;
+}
+:lang(my) body {
+  font-family: var(--font-jakarta), var(--font-padauk), var(--font-myanmar), system-ui, sans-serif;
+}
+:lang(th) body {
+  /* Song lyrics are in Shan/Myanmar script regardless of interface language (the
+     interface language and a song's own script are unrelated) — keep the same
+     Myanmar fallback the global --font-sans stack has, or Shan/Burmese lyrics shown
+     under the Thai interface lose it and fall through to the OS's own Myanmar font. */
+  font-family: var(--font-jakarta), var(--font-thai), var(--font-myanmar), system-ui, sans-serif;
+}
+.brand-shn {
+  font-family: var(--font-shan-brand), var(--font-shan-text), var(--font-myanmar), sans-serif;
+  font-weight: 400;
+}
+
+.field-input {
+  height: 3rem;
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgb(0 0 0 / 0.12);
+  background: #fff;
+  padding-left: 2.9rem;
+  padding-right: 1rem;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgb(59 130 246 / 0.15);
+}
+
+/* ---- Song lyrics + chords (components/LyricLine.tsx) ---- */
+
+:root {
+  --chord: #2563eb;
+}
+
+.chord {
+  color: var(--chord);
+  font-weight: 700;
+  font-size: 0.92em;
+  letter-spacing: 0.01em;
+}
+
+/* Each line scrolls on its own if it's wider than the screen (chords need
+   the lyric on one line to stay aligned) — scrollbar hidden, it's a swipe. */
+.lyric-scroll {
+  /* overflow-x:auto makes the row a clip box; this extra top room (cancelled by the
+     negative margin, so spacing is unchanged) keeps the tops of tall Shan/Burmese
+     marks and of the chord row from being cut off. */
+  padding-top: 0.4rem;
+  margin-top: -0.4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.lyric-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Pinned to Roboto regardless of --font-sans (2026-10-01: --font-sans switched
+   to Plus Jakarta Sans for everything else) — LyricLine.tsx positions each
+   chord above a specific character offset in the lyric text below it, a
+   calculation that assumes Roboto's own character widths throughout (same
+   font the Flutter app renders lyrics in, so a song that aligns there aligns
+   here too). Swapping the lyric font would silently shift every chord off
+   its syllable. `.chord`/`.chord-anchor` nest inside these two and inherit
+   this rather than repeating it. */
+.lyric-line,
+.lyric-inline {
+  font-family: var(--font-roboto), var(--font-thai), var(--font-shan-text), var(--font-myanmar), var(--font-padauk), system-ui, sans-serif;
+}
+.lyric-line {
+  position: relative;
+  width: max-content;
+  min-width: 100%;
+  white-space: pre;
+  font-size: var(--lyric-size, 1.0625rem);
+  line-height: 1.45;
+  margin-bottom: 0.15rem;
+}
+.lyric-line.has-chords {
+  padding-top: 1.3em;
+}
+
+.lyric-seg {
+  position: relative;
+}
+
+.chord-anchor {
+  position: absolute;
+  left: 0;
+  top: -1.25em;
+  white-space: pre;
+  user-select: none;
+  line-height: 1.25;
+}
+
+/* Section labels ("Key D", "Intro C / F / G", "Verse 1") and chord-only rows */
+.lyric-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.25rem;
+  font-size: var(--lyric-size, 1.0625rem);
+  line-height: 1.4;
+  /* A blank line the author left between sections (e.g. between Verse 1 and
+     Chorus) parses to a real, empty `{content: []}` entry — LyricLine.tsx
+     renders it as a `.lyric-inline` with zero tokens inside — but a
+     `display: flex` container with no children doesn't get a line-height
+     strut the way a normal block/inline element does: it collapses to the
+     height of its own content (none) regardless of `line-height`/`font-size`
+     set on the container itself. Without this, every blank line the owner
+     typed between sections was shrinking down to just this rule's own
+     margin (~0.45rem) instead of a real line's height, which is what made
+     every section read as running into the next ("ผมจะเว้นหนึ่งแถว...แต่ใน
+     หน้าอ่านเพลง มันติดกันทุกตอนเลยครับ", 2026-10-07). `min-height` restores
+     a real line's worth of space even with nothing inside; it's a no-op for
+     every non-blank inline line (labels, chord-only rows), which were
+     always taller than this already. */
+  min-height: calc(1.4 * var(--lyric-size, 1.0625rem));
+  margin: 0.35rem 0 0.1rem;
+  font-weight: 600;
+  color: #525252;
+}
+
+@media print {
+  header,
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  article {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  section {
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+  .lyric-scroll {
+    overflow: visible;
+  }
+}
+
+/* Plain text input / select / textarea for the editor forms (no icon gutter). */
+.plain-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgb(0 0 0 / 0.12);
+  background: #fff;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.plain-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgb(59 130 246 / 0.15);
+}
+
+/* Published lyrics can't be drag-selected or copied (Shan text is one of the
+   things this site exists to keep in circulation *with* credit). The text is
+   still real DOM for search engines, screen readers and printing. */
+.no-copy {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Chords page grid: phones pick 2-4 columns via --cols, wider screens flow
+   naturally (~150px cards). */
+.chord-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+}
+@media (min-width: 640px) {
+  .chord-grid {
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+/* Wide letter-spacing and forced capitals suit Latin headings but break the
+   shaping of Myanmar-script (Shan, Burmese) and Thai text — turn them off. */
+:lang(shn) [class*="tracking-["],
+:lang(my) [class*="tracking-["],
+:lang(th) [class*="tracking-["] {
+  letter-spacing: normal;
+}
+:lang(shn) .uppercase,
+:lang(my) .uppercase,
+:lang(th) .uppercase {
+  text-transform: none;
+}
+
+/* ---- Dark theme ---------------------------------------------------------
+   Toggled by the `dark` class on <html> (components/ThemeToggle.tsx; an inline
+   script in app/layout.tsx applies the saved choice before first paint). The
+   components are written with Tailwind's light palette, so rather than add a
+   `dark:` variant to hundreds of class lists, the neutral/white/black utilities
+   are re-mapped here. Two rules keep it manageable:
+   - Only *surface* colours flip (bg-white, neutral text/backgrounds, faint
+     black borders and hover tints). Coloured gradients and their white text
+     stay as they are.
+   - A white button sitting on a coloured gradient is marked `keep-light` and
+     left alone.
+   Screen only: printing always stays black on white. */
+@media screen {
+  :root.dark {
+    color-scheme: dark;
+    --background: #0d0e12;
+    --foreground: #ececf1;
+    --chord: #60a5fa;
+  }
+
+  /* surfaces */
+  .dark .bg-white:not(.keep-light) { background-color: #16181d; }
+  .dark .bg-white\/80 { background-color: rgb(13 14 18 / 0.8); }
+  .dark .bg-white\/90:not(.keep-light) { background-color: rgb(22 24 29 / 0.9); }
+  .dark .bg-neutral-50 { background-color: #1b1d23; }
+  .dark .bg-neutral-100 { background-color: #23262d; }
+  .dark .bg-neutral-200 { background-color: #2c3038; }
+  .dark .bg-neutral-200\/70 { background-color: rgb(44 48 56 / 0.7); }
+  .dark .from-white { --tw-gradient-from: #16181d; }
+  .dark .to-neutral-50 { --tw-gradient-to: #1b1d23; }
+  .dark .field-input,
+  .dark .plain-input { background: #1b1d23; border-color: rgb(255 255 255 / 0.14); color: var(--foreground); }
+  .dark .field-input::placeholder,
+  .dark .plain-input::placeholder { color: #7c808b; }
+  .dark .lyric-inline { color: #b3b6bf; }
+
+  /* the "primary" black button / active pill flips to white */
+  .dark .bg-black:not(.keep-light) { background-color: #f2f2f5; }
+  .dark .bg-black.text-white:not(.keep-light) { color: #0d0e12; }
+  .dark .hover\:bg-neutral-800:hover { background-color: #d9dae0; }
+  .dark .border-black:not(.keep-light) { border-color: #f2f2f5; }
+
+  /* text */
+  .dark .text-black:not(.keep-light),
+  .dark .text-neutral-900:not(.keep-light) { color: #f2f2f5; }
+  .dark .text-neutral-800:not(.keep-light) { color: #e6e6ea; }
+  .dark .text-neutral-700 { color: #d1d3d9; }
+  .dark .text-neutral-600 { color: #b3b6bf; }
+  .dark .text-neutral-500 { color: #9599a3; }
+  .dark .text-neutral-400 { color: #7c808b; }
+  .dark .text-neutral-300 { color: #5b5f69; }
+  .dark .hover\:text-black:hover { color: #fff; }
+  .dark .text-black\/\[0\.14\] { color: rgb(255 255 255 / 0.14); }
+
+  /* hairlines and hover tints (black at low alpha -> white at low alpha) */
+  .dark .border-black\/5,
+  .dark .divide-black\/5 > :not(:last-child) { border-color: rgb(255 255 255 / 0.08); }
+  .dark .border-black\/\[0\.07\] { border-color: rgb(255 255 255 / 0.09); }
+  .dark .border-black\/10 { border-color: rgb(255 255 255 / 0.12); }
+  .dark .border-black\/15 { border-color: rgb(255 255 255 / 0.16); }
+  .dark .border-black\/30,
+  .dark .hover\:border-black\/30:hover { border-color: rgb(255 255 255 / 0.32); }
+  .dark .bg-black\/5 { background-color: rgb(255 255 255 / 0.07); }
+  .dark .hover\:bg-black\/5:hover { background-color: rgb(255 255 255 / 0.09); }
+  .dark .bg-black\/10 { background-color: rgb(255 255 255 / 0.1); }
+  .dark .bg-black\/15 { background-color: rgb(255 255 255 / 0.14); }
+  .dark .ring-black\/10,
+  .dark .ring-black\/15,
+  .dark .hover\:ring-black\/10:hover,
+  .dark .hover\:ring-black\/15:hover { --tw-ring-color: rgb(255 255 255 / 0.16); }
+  .dark .hover\:bg-neutral-50:hover { background-color: #1f2229; }
+  .dark .hover\:bg-neutral-100:hover { background-color: #2a2d35; }
+  .dark .hover\:bg-neutral-200:hover { background-color: #333741; }
+  .dark .hover\:bg-neutral-200\/70:hover { background-color: rgb(51 55 65 / 0.7); }
+
+  /* light tinted chips / hovers used across the site */
+  .dark .bg-blue-50 { background-color: rgb(59 130 246 / 0.14); }
+  .dark .hover\:bg-blue-50\/60:hover { background-color: rgb(59 130 246 / 0.1); }
+  .dark .bg-indigo-50 { background-color: rgb(99 102 241 / 0.16); }
+  .dark .hover\:bg-indigo-50:hover { background-color: rgb(99 102 241 / 0.16); }
+  .dark .bg-fuchsia-50 { background-color: rgb(217 70 239 / 0.14); }
+  .dark .bg-red-50,
+  .dark .hover\:bg-red-50:hover { background-color: rgb(239 68 68 / 0.14); }
+  .dark .text-blue-700, .dark .text-indigo-700 { color: #93b4ff; }
+  .dark .text-red-600 { color: #f87171; }
+  .dark .keep-light.text-blue-700, .dark .keep-light.text-indigo-700 { color: #1d4ed8; }
+  .dark .bg-emerald-50 { background-color: rgb(16 185 129 / 0.14); }
+  .dark .bg-emerald-100 { background-color: rgb(16 185 129 / 0.2); }
+  .dark .bg-emerald-200 { background-color: rgb(16 185 129 / 0.28); }
+  .dark .bg-amber-50 { background-color: rgb(245 158 11 / 0.14); }
+  .dark .bg-amber-100 { background-color: rgb(245 158 11 / 0.2); }
+  .dark .bg-rose-50 { background-color: rgb(244 63 94 / 0.14); }
+  .dark .bg-blue-100 { background-color: rgb(59 130 246 / 0.22); }
+  .dark .text-emerald-700, .dark .text-emerald-800 { color: #6ee7b7; }
+  .dark .text-red-700 { color: #fca5a5; }
+  .dark .text-amber-700 { color: #fcd34d; }
+  .dark .text-blue-800, .dark .text-blue-900 { color: #bcd0ff; }
+}
+
+@keyframes theme-spin {
+  from { transform: rotate(-90deg) scale(0.4); opacity: 0; }
+  to { transform: rotate(0) scale(1); opacity: 1; }
+}
+.theme-icon { animation: theme-spin 0.35s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .theme-icon { animation: none; }
+}
+
+/* Reader "Full" view (components/SongReader.tsx): only the song content remains. */
+html.reader-full header,
+html.reader-full footer,
+html.reader-full nav,
+html.reader-full .no-print {
+  display: none !important;
+}
+html.reader-full main {
+  padding-bottom: 0 !important;
+}
+
+/* Indeterminate bar under the navbar while a page is loading (app/loading.tsx). */
+@keyframes load-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+.load-bar { animation: load-bar 1.1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .load-bar { animation: none; width: 100%; opacity: 0.6; }
+}
+
+/* Scroll-reveal (components/Reveal.tsx): fades a section, or each of a grid's
+   direct children in a stagger, in as it enters the viewport. Text stays in
+   the DOM the whole time (opacity only, never `display`/`visibility`), so a
+   crawler reading raw HTML sees everything regardless of animation state —
+   only a human with JS disabled or broken would see the un-animated .reveal
+   default below, which app/layout.tsx's <noscript> override covers. */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.reveal { opacity: 0; }
+.reveal.reveal-in { animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.reveal-stagger > * { opacity: 0; }
+.reveal-stagger.reveal-in > * {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(45ms * var(--i, 0));
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-stagger > * { opacity: 1; }
+  .reveal.reveal-in,
+  .reveal-stagger.reveal-in > * { animation: none; }
+}
+
+/* Home hero's blurred glow circles (app/page.tsx): a slow, subtle drift so the
+   hero doesn't feel static. Different duration/direction per blob keeps it
+   from reading as one thing breathing in sync. */
+@keyframes blob-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(18px, 24px) scale(1.08); }
+}
+@keyframes blob-drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-22px, -14px) scale(1.06); }
+}
+@keyframes blob-drift-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-14px, 20px) scale(0.94); }
+}
+.hero-blob-a { animation: blob-drift-a 14s ease-in-out infinite; }
+.hero-blob-b { animation: blob-drift-b 17s ease-in-out infinite; }
+.hero-blob-c { animation: blob-drift-c 11s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-blob-a, .hero-blob-b, .hero-blob-c { animation: none; }
+}
+
+/* Mobile bottom nav's sliding active-tab pill (components/MobileBottomNav.tsx)
+   — the component measures the active tab's real pixel center and sets
+   `transform: translate3d(...)` inline per render; this class only owns the
+   TRANSITION (not the transform value itself, which the inline style always
+   overrides). `top` is static (6px = half the 64px bar height minus half
+   the 44px pill minus the 4px lift, all fixed values) since vertical
+   position never changes, only horizontal does.
+   Originally animated the `left` property instead (a plain percentage) —
+   switched 2026-10-05 after the owner reported real lag on phones
+   ("หน้าจอโทรศัพค่อนข้างหน่วงพอสมควรโดยเฉพาะปุ่ม navbar"): `left` is a
+   layout property, so animating it forces the browser to recompute geometry
+   on every single frame of the 320ms transition (a reflow, not just a
+   repaint) — exactly the kind of thing that's imperceptible on a desktop
+   dev machine but visibly janky on real phone hardware. `transform` is
+   GPU-composited and skips layout entirely, the standard technique for a
+   sliding-tab indicator. cubic-bezier here overshoots slightly past 100%
+   before settling back (a standard "backOut" curve) for a touch of
+   spring/bounce rather than a flat linear slide. */
+.mobile-nav-pill {
+  top: 6px;
+  transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-pill,
+  .mobile-nav-icon { transition: none; }
+}
+
+/* Site-wide "3D-ish" hover/press language (2026-10-01, owner: "ตรงไหนที่ใส่
+   ได้ใส่ให้หน่อยนะ ผมอยากสวยกว่าคู่แข่ง" — after approving the bottom-nav
+   pill above). Reuses that SAME backOut cubic-bezier on every card/button
+   that already had a hover lift (`hover:-translate-y-*` + shadow-grow) or
+   hover scale, one shared class instead of repeating the curve as an
+   arbitrary Tailwind value on a dozen elements. `active:scale-*`/
+   `active:shadow-*` (added alongside this class at each call site, not
+   baked in here — the right amount of press-in varies per element) is the
+   other half: hover effects are invisible on touch (no mouse), so most of
+   this site's existing card lifts previously gave PHONE users, its main
+   audience, zero tactile feedback at all — only 3 elements had any `active:`
+   state before this round (TunerView's dial, ChordsView's chord cards,
+   MobileBottomNav's tab icons). */
+.lift-spring {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lift-spring { transition: none; }
+}
+
+/* Book mode (components/BookPage.tsx, BookReader.tsx): a page hasn't loaded
+   its real lyrics yet (lib/use-book-window.ts's window hasn't reached it) — a
+   shimmering placeholder rather than a blank page. */
+/* The page IS the scroll container (see components/BookPage.tsx's own
+   comment for why `overflow-y: auto` lives directly on `.book-page` rather
+   than a nested flex child). Plain vertical scroll, same on every screen
+   size — a CSS multi-column layout was tried here (see CLAUDE.md's
+   2026-10-08 entries) to avoid scrolling at all, but reading an overflow
+   column needed a *horizontal* scroll/drag on desktop, and no amount of
+   shrinking/compacting made every song fit besides — reverted in favor of
+   just letting a page read exactly like the normal reader already does. */
+.book-page {
+  box-shadow: inset 0 0 40px -20px rgba(0, 0, 0, 0.15);
+  scrollbar-width: thin;
+}
+@keyframes skeleton-shimmer {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.book-page-skeleton-line { animation: skeleton-shimmer 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .book-page-skeleton-line { animation: none; opacity: 0.8; }
+}
+
+/* react-pageflip / the underlying page-flip engine positions its pages with
+   these exact classNames but ships no CSS of its own to style them (confirmed:
+   its published package has no CSS file in `dist`, only this file's source
+   under page-flip/src/Style/stPageFlip.css) — copied here rather than a deep
+   import from a library's internal src/ folder, consistent with this project
+   keeping all its styling in one sheet. Re-copy this block if page-flip is
+   ever upgraded and changes its required structure. */
+.stf__parent {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  transform: translateZ(0);
+  touch-action: pan-y;
+}
+.stf__wrapper {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+.stf__parent canvas {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+}
+.stf__block {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  perspective: 2000px;
+}
+.stf__item {
+  display: none;
+  position: absolute;
+  transform-style: preserve-3d;
+}
+.stf__outerShadow, .stf__innerShadow, .stf__hardShadow, .stf__hardInnerShadow {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.book-flip {
+  width: 100%;
+}
+
+/* Book Mode "full screen" on phones — components/BookReader.tsx sets
+   html.book-full for its whole mounted lifetime (unconditionally, like
+   SongReader's reader-full); gating every rule here to below Tailwind's md
+   breakpoint means it's a no-op on desktop, where the existing centered
+   card layout (app/book/page.tsx's header + BookReader's max-w-5xl frame)
+   already has room to spare and is left untouched.
+   Owner: "เต็มจอไปเลยเหลือไว้แค่ navbar พอ" — everything except the top
+   Navbar is removed/collapsed so the flip-book fills the rest of the
+   screen. Footer/MobileBottomNav are targeted via a `body >` child
+   selector rather than a bare `footer`/`nav` selector, since Navbar's own
+   <nav> lives nested inside its <header>, not directly under <body> — this
+   keeps the top bar itself untouched. */
+@media (max-width: 767px) {
+  html.book-full body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+  html.book-full body > footer,
+  html.book-full body > nav {
+    display: none !important;
+  }
+  html.book-full main {
+    padding-bottom: 0 !important;
+  }
+  html.book-full .book-page-shell {
+    display: flex;
+    height: 100%;
+    max-width: none;
+    flex-direction: column;
+    padding: 0;
+  }
+  html.book-full .book-page-shell > header {
+    display: none;
+  }
+  html.book-full .book-page-frame {
+    max-width: none;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+  }
+  html.book-full .book-page-frame > p {
+    display: none;
+  }
+  /* .book-flip-slot, not .book-page-frame, is what BookReader.tsx's
+     useMobileFrameSize measures for react-pageflip's width/height props —
+     it has to exclude BookToolbar's own row (a sibling, also a direct child
+     of .book-page-frame), since that toolbar takes real space out of the
+     same flex column. Measuring the frame itself would tell the flip-book
+     it has more height than it actually does, overflowing by exactly the
+     toolbar's height. */
+  html.book-full .book-flip-slot {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+  html.book-full .book-flip {
+    flex: 1;
+    min-height: 0;
+  }
+}

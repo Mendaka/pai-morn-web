@@ -1,0 +1,24 @@
+{
+  "hosting": {
+    "source": ".",
+    "site": "song-and-chord",
+    "frameworksBackend": { "region": "us-central1", "memory": "512MiB" },
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/songbook/song-card/**", "function": "songCard" },
+      { "source": "/site-card.png", "function": "siteCard" },
+      { "source": "/daily-update-card.png", "function": "dailyUpdateCard" },
+      { "source": "/daily-update", "function": "dailyUpdatePreview" },
+      { "source": "/api/record-song-view", "function": "recordSongView" },
+      { "source": "/api/record-site-view", "function": "recordSiteView" },
+      { "source": "/api/upload-artist-photo", "function": "uploadArtistPhoto" },
+      { "source": "/api/upload-playlist-cover", "function": "uploadPlaylistCover" },
+      { "source": "/api/upload-shop-product-image", "function": "uploadShopProductImage" },
+      { "source": "/youtube-embed", "function": "youtubeEmbed" }
+    ]
+  },
+  "emulators": {
+    "auth": { "port": 9099 },
+    "firestore": { "port": 8080 }
+  }
+}
